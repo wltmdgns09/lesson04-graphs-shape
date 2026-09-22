@@ -311,37 +311,42 @@ st.info(
 
 
 # ==============================================================
-# 그래프 8. 10위권에 오래 머문 영화는 총 관객도 많은가 - 산점도
+# 그래프 8. 첫 주 관객이 총 관객에서 차지하는 비중은 장르마다 다른가 - 박스플롯
 # ==============================================================
 st.markdown("---")
-st.header("8. 10위권에 오래 머문 영화는 총 관객도 많은가")
+st.header("8. 첫 주 관객이 총 관객에서 차지하는 비중은 장르마다 다른가")
 
-fig_top10 = px.scatter(
+movies["first_week_ratio"] = movies["first_week_audi"] / movies["total_audi"]
+
+fig_ratio = px.box(
     movies,
-    x="days_in_top10",
-    y="total_audi",
+    x="genre",
+    y="first_week_ratio",
+    color="genre",
+    points="outliers",
     hover_name="movieNm",
-    title="10위권에 오래 머문 영화는 총 관객도 많은가",
+    title="첫 주 관객이 총 관객에서 차지하는 비중은 장르마다 다른가",
 )
-fig_top10.update_traces(
-    hovertemplate="영화명: %{hovertext}<br>10위권 유지 일수: %{x}일<br>총 관객: %{y:,.0f}명<extra></extra>",
+fig_ratio.update_traces(
+    hovertemplate="영화명: %{hovertext}<br>첫 주 관객 비중: %{y:.1%}<extra></extra>",
 )
-fig_top10.update_layout(
-    xaxis_title="10위권에 머문 날수",
-    yaxis_title="총 관객 수",
+fig_ratio.update_layout(
+    xaxis_title="장르",
+    yaxis_title="첫 주 관객 비중",
+    yaxis_tickformat=".0%",
+    showlegend=False,
     margin=dict(t=60, b=30, l=10, r=10),
 )
 
-st.plotly_chart(fig_top10, use_container_width=True)
+st.plotly_chart(fig_ratio, use_container_width=True)
 
-days_audi_corr = movies["days_in_top10"].corr(movies["total_audi"])
+ratio_median = movies.groupby("genre")["first_week_ratio"].median().sort_values(ascending=False)
+top_ratio_genre = ratio_median.index[0]
+bottom_ratio_genre = ratio_median.index[-1]
 
 st.markdown("**🔎 이 그래프로 알 수 있는 것**")
 st.info(
-    f"10위권 유지 일수와 총 관객 수의 상관계수는 {days_audi_corr:.2f}로, "
-    + (
-        "10위권에 오래 머문 영화일수록 총 관객도 많은 경향이 뚜렷하다."
-        if days_audi_corr >= 0.5
-        else "10위권에 오래 머물렀다고 해서 총 관객이 반드시 많은 것은 아니다."
-    )
+    f"'{top_ratio_genre}' 장르는 첫 주 관객 비중 중앙값이 {ratio_median.iloc[0]:.1%}로 "
+    f"개봉 초반에 관객이 몰리는 경향이 가장 강하고, '{bottom_ratio_genre}' 장르는 "
+    f"{ratio_median.iloc[-1]:.1%}로 상대적으로 뒷심(입소문)으로 관객을 모으는 편이다."
 )
